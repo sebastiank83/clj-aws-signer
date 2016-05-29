@@ -1,13 +1,13 @@
 (ns clj-aws-signer.core
-  (:require [clojure.string :as s]
-            [clojure.java.io :as io])
-  (:import [com.amazonaws.auth
+  (:require [clojure.java.io :as io]
+            [clojure.string :as s])
+  (:import com.amazonaws.DefaultRequest
+           [com.amazonaws.auth
             AWS4Signer
             AWSCredentialsProviderChain
             DefaultAWSCredentialsProviderChain]
-           com.amazonaws.regions.Regions
-           com.amazonaws.DefaultRequest
            com.amazonaws.http.HttpMethodName
+           com.amazonaws.regions.Regions
            java.net.URI
            java.util.HashMap
            org.apache.http.entity.AbstractHttpEntity))
@@ -60,11 +60,21 @@
 (defn- valid-parameter? [m & ks]
   (every? #(or (% m) (throw (IllegalArgumentException. (str "Missing request parameter: " %)))) ks))
 
+(defn- ring-params->hashmap
+  "Takes a parameter map and converts it to a HashMap of type HashMap<String,List<String>>."
+  [p]
+  (let [map (java.util.HashMap.)]
+    (doseq [[k v] p]
+      (.put map (str k) (let [list (java.util.ArrayList.)]
+                          (doseq [n (flatten [v])]
+                            (.add list (str n))) list)))
+    map))
+
 (defn- ring->aws-request
   "Builds an AWS request object out of a ring request map."
   [req]
   (valid-parameter? req :scheme :server-name :server-port :headers :request-method :uri)
-  (let [{:keys [scheme server-name server-port request-method headers uri body]} req]
+  (let [{:keys [scheme server-name server-port request-method headers uri body params]} req]
     (doto (DefaultRequest. "")
       (.setEndpoint (URI. (str (name  scheme) "://" server-name (when server-port
                                                                   (str ":" server-port)))))
@@ -76,7 +86,8 @@
       ;; [1] https://github.com/ring-clojure/ring/blob/master/SPEC
       (.setContent (when body (if (instance? AbstractHttpEntity body)
                                 (.getContent ^AbstractHttpEntity body)
-                                (io/input-stream (.getBytes (slurp body))))))
+                                body)))
+      (.setParameters (ring-params->hashmap params))
       (.addHeader "presigned-expires" "false"))))
 
 (defn wrap-sign-aws-request
@@ -93,4 +104,3 @@
   ([handler service-name aws-region]
    (fn [req]
      (handler (assoc-in req [:headers] (into {} (.getHeaders ^DefaultRequest (sign (ring->aws-request req) service-name aws-region))))))))
-

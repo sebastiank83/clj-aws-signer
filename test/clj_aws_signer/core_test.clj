@@ -11,9 +11,14 @@
                    :server-port 80
                    :uri "/a/b/c"
                    :headers {"a" "1", "b" "2"}
+                   :params {"a" "1", 1 "2", 3 [1234 "a" 4], "4" 4}
                    :body (java.io.ByteArrayInputStream. (.getBytes "TEST BODY"))})
 
 (def test-request-clj-http (assoc test-request :body (org.apache.http.entity.StringEntity. "TEST BODY StringEntity")))
+
+(defn signing-date
+  []
+  (.format (java.text.SimpleDateFormat. "yyyyMMdd") (java.util.Date.)))
 
 (deftest test-aws-signer
   (with-redefs [clj-aws-signer.core/credentials (fn [] (BasicAWSCredentials. "AWS_TEST_KEY" "AWS_TEST_SECRET_KEY"))]
@@ -21,9 +26,8 @@
       (testing "request signing"
         (let [request test-request
               response (handler request)]
-          (is (not-empty (get-in response [:headers "Authorization"])))
+          (is (s/includes? (get-in response [:headers "Authorization"]) (str "AWS_TEST_KEY/" (signing-date) "/test-region/TST/aws4_request")))
           (is (not-empty (get-in response [:headers "X-Amz-Date"])))
-          (is (s/includes? (get-in response [:headers "Authorization"]) "test-region"))
           (is (= "false" (get-in response [:headers "presigned-expires"])))
           (is (= "1" (get-in response [:headers "a"])))))
 
@@ -36,10 +40,12 @@
       (testing "empty request body"
         (is (not-empty (get-in (handler (update-in test-request [:headers] dissoc :body)) [:headers "Authorization"]))))
 
+      (testing "without query parameters"
+        (is (not-empty (get-in (handler (dissoc test-request :params)) [:headers "Authorization"]))))
+
       (testing "sign clj-http request"
         (is (= (:body test-request-clj-http) (:body (handler test-request-clj-http))))))
 
     (let [handler (wrap-sign-aws-request identity "")]
       (testing "missing service name"
         (is (thrown-with-msg? IllegalArgumentException #"AWS service name missing." (handler test-request)))))))
-

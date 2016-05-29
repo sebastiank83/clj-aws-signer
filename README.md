@@ -23,15 +23,15 @@ Sign a clj-http request:
     [clj-http.client :as client]
     [clj-aws-signer.core :refer [wrap-sign-aws-request]]))
 
-(clj-http.client/with-additional-middleware [#(wrap-sign-aws-request %1 "<SERVICE NAME>")]
-  (clj-http.client/get "http://........")
+(client/with-additional-middleware [#(wrap-sign-aws-request %1 "<SERVICE NAME>")]
+  (client/get "http://........")
 )
 ```
 
 Sign a request made with the `elastisch` library:
 ```clojure
 ...
-(clj-http.client/with-additional-middleware [#(wrap-sign-aws-request %1 "es")]
+(client/with-additional-middleware [#(wrap-sign-aws-request %1 "es")]
   (esd/search conn "myapp_development" "person" :query (q/term :biography "New York"))
 )
 ...
