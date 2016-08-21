@@ -1,4 +1,4 @@
-# clj-aws-signer
+# clj-aws-signer [![Build Status](https://travis-ci.org/sebastiank83/clj-aws-signer.svg?branch=master)](https://travis-ci.org/sebastiank83/clj-aws-signer)
 A ring middleware to sign AWS requests.
 
 ## Usage
