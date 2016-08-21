@@ -4,7 +4,7 @@ A ring middleware to sign AWS requests.
 ## Usage
 To use `clj-aws-signer`, add this project as a dependency in your leiningen project file:
 
-`[clj-aws-signer "0.1.0-SNAPSHOT"]`
+[![Clojars Project](https://img.shields.io/clojars/v/clj-aws-signer.svg)](https://clojars.org/clj-aws-signer)
 
 ```clojure
 (wrap-sign-aws-request handler service-name region)

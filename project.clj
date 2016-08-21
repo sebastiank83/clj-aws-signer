@@ -1,4 +1,4 @@
-(defproject clj-aws-signer "0.1.0-SNAPSHOT"
+(defproject clj-aws-signer "0.1.0"
   :description "A ring middleware to sign AWS requests."
   :url "https://github.com/sebastiank83/clj-aws-signer"
   :license {:name "MIT License"
