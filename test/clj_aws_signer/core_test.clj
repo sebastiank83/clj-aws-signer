@@ -16,9 +16,9 @@
 
 (def test-request-clj-http (assoc test-request :body (org.apache.http.entity.StringEntity. "TEST BODY StringEntity")))
 
-(defn signing-date
-  []
-  (.format (java.text.SimpleDateFormat. "yyyyMMdd") (java.util.Date.)))
+(def signing-date
+  (.format (doto (java.text.SimpleDateFormat. "yyyyMMdd")
+            (.setTimeZone (java.util.TimeZone/getTimeZone "UTC"))) (java.util.Date.)))
 
 (deftest test-aws-signer
   (with-redefs [clj-aws-signer.core/credentials (fn [] (BasicAWSCredentials. "AWS_TEST_KEY" "AWS_TEST_SECRET_KEY"))]
@@ -26,16 +26,17 @@
       (testing "request signing"
         (let [request test-request
               response (handler request)]
-          (is (s/includes? (get-in response [:headers "Authorization"]) (str "AWS_TEST_KEY/" (signing-date) "/test-region/TST/aws4_request")))
+          (is (s/includes? (get-in response [:headers "Authorization"]) (str "AWS_TEST_KEY/" signing-date "/test-region/TST/aws4_request")))
           (is (not-empty (get-in response [:headers "X-Amz-Date"])))
           (is (= "false" (get-in response [:headers "presigned-expires"])))
           (is (= "1" (get-in response [:headers "a"])))))
 
       (testing "missing request parameters"
-        (is (thrown-with-msg? java.lang.IllegalArgumentException #"Missing request parameter: :server-name" (handler {:request-method "post", :scheme "https"})))
-        (is (thrown-with-msg? java.lang.IllegalArgumentException #"Missing request parameter: :server-port" (handler {:server-name "example.com", :scheme "http"})))
-        (is (thrown-with-msg? java.lang.IllegalArgumentException #"Missing request parameter: :scheme" (handler {:scheme nil})))
-        (is (thrown-with-msg? java.lang.IllegalArgumentException #"Missing request parameter: :scheme" (handler nil))))
+        (are [x y] (thrown-with-msg? IllegalArgumentException (re-pattern (str "Missing request parameter: " x)) (handler y))
+          ":server-name" {:request-method "post", :scheme "https"}
+          ":server-port" {:server-name "example.com", :scheme "http"}
+          ":scheme" {:scheme nil}
+          ":scheme" nil))
 
       (testing "empty request body"
         (is (not-empty (get-in (handler (update-in test-request [:headers] dissoc :body)) [:headers "Authorization"]))))

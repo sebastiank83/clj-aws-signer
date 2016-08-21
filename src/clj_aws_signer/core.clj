@@ -12,7 +12,7 @@
            java.util.HashMap
            org.apache.http.entity.AbstractHttpEntity))
 
-(defn- credentials-provider
+(def credentials-provider
   "Creates a new AWS Credentials provider chain.
   The default chain resolves the credentials in the following order:
 
@@ -20,7 +20,7 @@
   - Java system properties
   - Credential profiles
   - Instance profile credentials"
-  ^AWSCredentialsProviderChain []
+  ^AWSCredentialsProviderChain
   (DefaultAWSCredentialsProviderChain.))
 
 (defn- credentials
