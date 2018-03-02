@@ -5,5 +5,9 @@
             :url "http://opensource.org/licenses/MIT"}
 
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [com.amazonaws/aws-java-sdk-core "1.10.75"]])
-
+                 [com.amazonaws/aws-java-sdk-core "1.10.75"]]
+  :profiles {:1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}
+             :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}}
+  :aliases {"test-all" ["with-profile" "+1.8:+1.9" "do"
+                        ["clean"]
+                        ["test"]]})
