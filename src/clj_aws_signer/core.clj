@@ -25,7 +25,7 @@
 
 (defn- credentials
   []
-  (.getCredentials (credentials-provider)))
+  (.getCredentials credentials-provider))
 
 (defn- detect-region
   "Tries to detect which region should be used for API calls.
